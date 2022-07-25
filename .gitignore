@@ -16,3 +16,4 @@
 /.idea/
 /examples/go.sum
 /go.sum
+.vscode
