@@ -25,7 +25,7 @@ func (_this *Recognizer) SaveDataset(Path string) error {
 /*
 CleanDataset cleans dataset
 */
-func (_this *Recognizer) CleanDataset(Path string) {
+func (_this *Recognizer) CleanDataset() {
 	_this.Dataset = make([]Data, 0)
 }
 
