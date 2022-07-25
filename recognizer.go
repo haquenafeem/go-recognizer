@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"image"
+	"image/jpeg"
 	"os"
 
 	goFace "github.com/Kagami/go-face"
@@ -117,10 +118,46 @@ func (_this *Recognizer) AddImageToDataset(Path string, Id string) error {
 }
 
 /*
-AddToDataset adds a single data to the dataset
+AddRawImageToDataset addd a sample golang image to the dataset
 */
-func (_this *Recognizer) AddToDataset(d Data) {
+func (_this *Recognizer) AddRawImageToDataset(img image.Image, id string) error {
+	tmpFile := os.TempDir() + "/" + "123e4567-e89b-12d3-a456-426614174000.jpg"
+	f, err := os.Create(tmpFile)
+	if err != nil {
+		return err
+	}
+	defer f.Close()
+	if err = jpeg.Encode(f, img, nil); err != nil {
+		return err
+	}
+
+	return _this.AddImageToDataset(tmpFile, id)
+}
+
+/*
+AddImageBytesToDataset addd a sample golang image to the dataset
+*/
+func (_this *Recognizer) AddImageBytesToDataset(imgBytes []byte, id string) error {
+	img, _, err := image.Decode(bytes.NewReader(imgBytes))
+	if err != nil {
+		return err
+	}
+
+	return _this.AddRawImageToDataset(img, id)
+}
+
+/*
+AddSingleData adds a single data to the dataset
+*/
+func (_this *Recognizer) AddSingleData(d Data) {
 	_this.Dataset = append(_this.Dataset, d)
+}
+
+/*
+AddMultipleData adds a single data to the dataset
+*/
+func (_this *Recognizer) AddMultipleData(datas []Data) {
+	_this.Dataset = append(_this.Dataset, datas...)
 }
 
 /*
