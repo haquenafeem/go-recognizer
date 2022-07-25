@@ -160,6 +160,22 @@ func (_this *Recognizer) AddMultipleData(datas []Data) {
 	_this.Dataset = append(_this.Dataset, datas...)
 }
 
+func (_this *Recognizer) RemoveFromDataset(id string) {
+	index := -1
+	for i, f := range _this.Dataset {
+		if f.Id == id {
+			index = i
+			break
+		}
+	}
+
+	if index == -1 {
+		return
+	}
+	_this.Dataset = append(_this.Dataset[:index], _this.Dataset[index+1:]...)
+	_this.SetSamples()
+}
+
 /*
 SetSamples sets known descriptors so you can classify the new ones.
 */
