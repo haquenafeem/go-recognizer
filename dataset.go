@@ -23,6 +23,13 @@ func (_this *Recognizer) SaveDataset(Path string) error {
 }
 
 /*
+CleanDataset cleans dataset
+*/
+func (_this *Recognizer) CleanDataset(Path string) {
+	_this.Dataset = make([]Data, 0)
+}
+
+/*
 LoadDataset loads the data from the json file into the Dataset
 */
 func (_this *Recognizer) LoadDataset(Path string) error {

@@ -2,7 +2,7 @@ module github.com/leandroveronezi/go-recognizer
 
 go 1.13
 
-require (	
+require (
 	github.com/Kagami/go-face v0.0.0-20200513173138-d4af7c8eab1c
 	github.com/disintegration/imaging v1.6.2
 	github.com/fogleman/gg v1.3.0

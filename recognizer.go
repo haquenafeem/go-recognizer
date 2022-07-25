@@ -5,9 +5,10 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	goFace "github.com/Kagami/go-face"
 	"image"
 	"os"
+
+	goFace "github.com/Kagami/go-face"
 )
 
 // Data descriptor of the human face.
@@ -113,6 +114,13 @@ func (_this *Recognizer) AddImageToDataset(Path string, Id string) error {
 
 	return nil
 
+}
+
+/*
+AddToDataset adds a single data to the dataset
+*/
+func (_this *Recognizer) AddToDataset(d Data) {
+	_this.Dataset = append(_this.Dataset, d)
 }
 
 /*
