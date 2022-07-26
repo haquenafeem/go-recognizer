@@ -297,6 +297,29 @@ func (_this *Recognizer) Classify(Path string) ([]Face, error) {
 
 }
 
+func (_this *Recognizer) ClassifyWithImage(img image.Image) ([]Face, error) {
+	tmpFile := os.TempDir() + "/" + "72c94a8e-a2fd-4fca-8869-ae957ba2e04a.jpg"
+	f, err := os.Create(tmpFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if err = jpeg.Encode(f, img, nil); err != nil {
+		return nil, err
+	}
+
+	return _this.Classify(tmpFile)
+}
+
+func (_this *Recognizer) ClassifyWithBytes(imgBytes []byte) ([]Face, error) {
+	img, _, err := image.Decode(bytes.NewReader(imgBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	return _this.ClassifyWithImage(img)
+}
+
 /*
 ClassifyMultiples returns all faces identified in the image. Empty list is returned if no match.
 */
@@ -325,6 +348,29 @@ func (_this *Recognizer) ClassifyMultiples(Path string) ([]Face, error) {
 
 	return facesRec, nil
 
+}
+
+func (_this *Recognizer) ClassifyMultiplesWithImage(img image.Image) ([]Face, error) {
+	tmpFile := os.TempDir() + "/" + "72c94a8e-a2fd-4fca-8869-ae957ba2e04a.jpg"
+	f, err := os.Create(tmpFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if err = jpeg.Encode(f, img, nil); err != nil {
+		return nil, err
+	}
+
+	return _this.ClassifyMultiples(tmpFile)
+}
+
+func (_this *Recognizer) ClassifyMultiplesWithBytes(imgBytes []byte) ([]Face, error) {
+	img, _, err := image.Decode(bytes.NewReader(imgBytes))
+	if err != nil {
+		return nil, err
+	}
+
+	return _this.ClassifyMultiplesWithImage(img)
 }
 
 /*
