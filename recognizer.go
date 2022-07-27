@@ -39,7 +39,7 @@ type Recognizer struct {
 /*
 Init initialise a recognizer interface.
 */
-func (_this *Recognizer) Init(Path string) error {
+func (_this *Recognizer) Init(path string) error {
 
 	_this.Tolerance = 0.4
 	_this.UseCNN = false
@@ -47,7 +47,7 @@ func (_this *Recognizer) Init(Path string) error {
 
 	_this.Dataset = make([]Data, 0)
 
-	rec, err := goFace.NewRecognizer(Path)
+	rec, err := goFace.NewRecognizer(path)
 
 	if err == nil {
 		_this.rec = rec
@@ -67,20 +67,16 @@ func (_this *Recognizer) Close() {
 
 }
 
-/*
-AddImageToDataset add a sample image to the dataset
-*/
-func (_this *Recognizer) AddImageToDataset(Path string, Id string) error {
-
-	file := Path
+func (_this *Recognizer) addImageToDatasetAndReturnFaceData(path string, id string) (*Data, error) {
+	file := path
 	var err error
 
 	if _this.UseGray {
 
-		file, err = _this.createTempGrayFile(file, Id)
+		file, err = _this.createTempGrayFile(file, id)
 
 		if err != nil {
-			return err
+			return nil, err
 		}
 
 		defer os.Remove(file)
@@ -96,51 +92,58 @@ func (_this *Recognizer) AddImageToDataset(Path string, Id string) error {
 	}
 
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	if len(faces) == 0 {
-		return errors.New("Not a face on the image")
+		return nil, errors.New("not a face on the image")
 	}
 
 	if len(faces) > 1 {
-		return errors.New("Not a single face on the image")
+		return nil, errors.New("not a single face on the image")
 	}
 
 	f := Data{}
-	f.Id = Id
+	f.Id = id
 	f.Descriptor = faces[0].Descriptor
 
 	_this.Dataset = append(_this.Dataset, f)
 
-	return nil
+	return &f, nil
+}
 
+/*
+AddImageToDataset add a sample image to the dataset
+*/
+func (_this *Recognizer) AddImageToDataset(path string, Id string) error {
+	_, err := _this.addImageToDatasetAndReturnFaceData(path, Id)
+	return err
 }
 
 /*
 AddRawImageToDataset addd a sample golang image to the dataset
 */
-func (_this *Recognizer) AddRawImageToDataset(img image.Image, id string) error {
+func (_this *Recognizer) AddRawImageToDataset(img image.Image, id string) (*Data, error) {
 	tmpFile := os.TempDir() + "/" + "123e4567-e89b-12d3-a456-426614174000.jpg"
 	f, err := os.Create(tmpFile)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	defer f.Close()
 	if err = jpeg.Encode(f, img, nil); err != nil {
-		return err
+		return nil, err
 	}
 
-	return _this.AddImageToDataset(tmpFile, id)
+	return _this.addImageToDatasetAndReturnFaceData(tmpFile, id)
 }
 
 /*
 AddImageBytesToDataset addd a sample golang image to the dataset
 */
-func (_this *Recognizer) AddImageBytesToDataset(imgBytes []byte, id string) error {
+func (_this *Recognizer) AddImageBytesToDataset(imgBytes []byte, id string) (*Data, error) {
 	img, _, err := image.Decode(bytes.NewReader(imgBytes))
 	if err != nil {
-		return err
+		return nil, err
 	}
 
 	return _this.AddRawImageToDataset(img, id)
@@ -197,9 +200,9 @@ func (_this *Recognizer) SetSamples() {
 RecognizeSingle returns face if it's the only face on the image or nil otherwise.
 Only JPEG format is currently supported.
 */
-func (_this *Recognizer) RecognizeSingle(Path string) (goFace.Face, error) {
+func (_this *Recognizer) RecognizeSingle(path string) (goFace.Face, error) {
 
-	file := Path
+	file := path
 	var err error
 
 	if _this.UseGray {
@@ -223,11 +226,11 @@ func (_this *Recognizer) RecognizeSingle(Path string) (goFace.Face, error) {
 	}
 
 	if err != nil {
-		return goFace.Face{}, fmt.Errorf("Can't recognize: %v", err)
+		return goFace.Face{}, fmt.Errorf("can't recognize: %v", err)
 
 	}
 	if idFace == nil {
-		return goFace.Face{}, fmt.Errorf("Not a single face on the image")
+		return goFace.Face{}, fmt.Errorf("not a single face on the image")
 	}
 
 	return *idFace, nil
@@ -240,9 +243,9 @@ left to right. Empty list is returned if there are no faces, error is
 returned if there was some error while decoding/processing image.
 Only JPEG format is currently supported.
 */
-func (_this *Recognizer) RecognizeMultiples(Path string) ([]goFace.Face, error) {
+func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) {
 
-	file := Path
+	file := path
 	var err error
 
 	if _this.UseGray {
@@ -266,7 +269,7 @@ func (_this *Recognizer) RecognizeMultiples(Path string) ([]goFace.Face, error) 
 	}
 
 	if err != nil {
-		return nil, fmt.Errorf("Can't recognize: %v", err)
+		return nil, fmt.Errorf("can't recognize: %v", err)
 	}
 
 	return idFaces, nil
@@ -276,9 +279,9 @@ func (_this *Recognizer) RecognizeMultiples(Path string) ([]goFace.Face, error) 
 /*
 Classify returns all faces identified in the image. Empty list is returned if no match.
 */
-func (_this *Recognizer) Classify(Path string) ([]Face, error) {
+func (_this *Recognizer) Classify(path string) ([]Face, error) {
 
-	face, err := _this.RecognizeSingle(Path)
+	face, err := _this.RecognizeSingle(path)
 
 	if err != nil {
 		return nil, err
@@ -286,7 +289,7 @@ func (_this *Recognizer) Classify(Path string) ([]Face, error) {
 
 	personID := _this.rec.ClassifyThreshold(face.Descriptor, _this.Tolerance)
 	if personID < 0 {
-		return nil, fmt.Errorf("Can't classify")
+		return nil, fmt.Errorf("can't classify")
 	}
 
 	facesRec := make([]Face, 0)
@@ -323,12 +326,12 @@ func (_this *Recognizer) ClassifyWithBytes(imgBytes []byte) ([]Face, error) {
 /*
 ClassifyMultiples returns all faces identified in the image. Empty list is returned if no match.
 */
-func (_this *Recognizer) ClassifyMultiples(Path string) ([]Face, error) {
+func (_this *Recognizer) ClassifyMultiples(path string) ([]Face, error) {
 
-	faces, err := _this.RecognizeMultiples(Path)
+	faces, err := _this.RecognizeMultiples(path)
 
 	if err != nil {
-		return nil, fmt.Errorf("Can't recognize: %v", err)
+		return nil, fmt.Errorf("can't recognize: %v", err)
 	}
 
 	facesRec := make([]Face, 0)
