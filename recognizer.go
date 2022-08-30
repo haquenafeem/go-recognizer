@@ -276,6 +276,21 @@ func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) 
 
 }
 
+func (_this *Recognizer) RecognizeMultiplesFromImage(img image.Image) ([]goFace.Face, error) {
+	uuid := "4209db13-5ac1-448c-8774-0c8ec51696a8"
+	tmpFile := os.TempDir() + "/" + uuid + ".jpg"
+	f, err := os.Create(tmpFile)
+	if err != nil {
+		return nil, err
+	}
+	defer f.Close()
+	if err = jpeg.Encode(f, img, nil); err != nil {
+		return nil, err
+	}
+
+	return _this.RecognizeMultiples(tmpFile)
+}
+
 /*
 Classify returns all faces identified in the image. Empty list is returned if no match.
 */
