@@ -10,6 +10,7 @@ import (
 	"os"
 
 	goFace "github.com/Kagami/go-face"
+	"github.com/google/uuid"
 )
 
 // Data descriptor of the human face.
@@ -124,7 +125,7 @@ func (_this *Recognizer) AddImageToDataset(path string, Id string) error {
 AddRawImageToDataset addd a sample golang image to the dataset
 */
 func (_this *Recognizer) AddRawImageToDataset(img image.Image, id string) (*Data, error) {
-	tmpFile := os.TempDir() + "/" + "123e4567-e89b-12d3-a456-426614174000.jpg"
+	tmpFile := os.TempDir() + "/" + uuid.NewString() + ".jpg"
 	f, err := os.Create(tmpFile)
 	if err != nil {
 		return nil, err
@@ -207,7 +208,7 @@ func (_this *Recognizer) RecognizeSingle(path string) (goFace.Face, error) {
 
 	if _this.UseGray {
 
-		file, err = _this.createTempGrayFile(file, "64ab59ac42d69274f06eadb11348969e")
+		file, err = _this.createTempGrayFile(file, uuid.NewString())
 
 		if err != nil {
 			return goFace.Face{}, err
@@ -250,7 +251,7 @@ func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) 
 
 	if _this.UseGray {
 
-		file, err = _this.createTempGrayFile(file, "64ab59ac42d69274f06eadb11348969e")
+		file, err = _this.createTempGrayFile(file, uuid.NewString())
 
 		if err != nil {
 			return nil, err
@@ -277,7 +278,7 @@ func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) 
 }
 
 func (_this *Recognizer) RecognizeMultiplesFromImage(img image.Image) ([]goFace.Face, error) {
-	uuid := "4209db13-5ac1-448c-8774-0c8ec51696a8"
+	uuid := uuid.NewString()
 	tmpFile := os.TempDir() + "/" + uuid + ".jpg"
 	f, err := os.Create(tmpFile)
 	if err != nil {
@@ -316,7 +317,7 @@ func (_this *Recognizer) Classify(path string) ([]Face, error) {
 }
 
 func (_this *Recognizer) ClassifyWithImage(img image.Image) ([]Face, error) {
-	tmpFile := os.TempDir() + "/" + "72c94a8e-a2fd-4fca-8869-ae957ba2e04a.jpg"
+	tmpFile := os.TempDir() + "/" + uuid.NewString() + ".jpg"
 	f, err := os.Create(tmpFile)
 	if err != nil {
 		return nil, err
@@ -369,7 +370,7 @@ func (_this *Recognizer) ClassifyMultiples(path string) ([]Face, error) {
 }
 
 func (_this *Recognizer) ClassifyMultiplesWithImage(img image.Image) ([]Face, error) {
-	tmpFile := os.TempDir() + "/" + "72c94a8e-a2fd-4fca-8869-ae957ba2e04a.jpg"
+	tmpFile := os.TempDir() + "/" + uuid.NewString() + ".jpg"
 	f, err := os.Create(tmpFile)
 	if err != nil {
 		return nil, err
