@@ -249,6 +249,11 @@ func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) 
 	file := path
 	var err error
 
+	defer func() {
+		os.Remove(file)
+		os.Remove(path)
+	}()
+
 	if _this.UseGray {
 
 		file, err = _this.createTempGrayFile(file, uuid.NewString())
