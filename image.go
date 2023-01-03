@@ -3,16 +3,17 @@ package recognizer
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"image"
+	"image/color"
+	"os"
+	"path/filepath"
+
 	goFace "github.com/Kagami/go-face"
 	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
+	"github.com/pixiv/go-libjpeg/jpeg"
 	"golang.org/x/image/font/gofont/goregular"
-	"image"
-	"image/color"
-	"image/jpeg"
-	"os"
-	"path/filepath"
 )
 
 /*
@@ -45,7 +46,7 @@ func (_this *Recognizer) SaveImage(Path string, Img image.Image) error {
 		return err
 	}
 
-	err = jpeg.Encode(outputFile, Img, nil)
+	err = jpeg.Encode(outputFile, Img, &jpeg.EncoderOptions{Quality: 100})
 
 	if err != nil {
 		return err
