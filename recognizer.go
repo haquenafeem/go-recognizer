@@ -438,6 +438,27 @@ func (_this *Recognizer) ClassifyMultiplesWithBytes(imgBytes []byte) ([]Face, er
 }
 
 /*
+Classify from a list of recognized faces.
+*/
+func (_this *Recognizer) ClassifyFaces(faces []goFace.Face) ([]Face, error) {
+	facesRec := make([]Face, 0)
+
+	for _, f := range faces {
+		personID := _this.rec.ClassifyThreshold(f.Descriptor, _this.Tolerance)
+		if personID < 0 {
+			continue
+		}
+
+		aux := Face{Data: _this.Dataset[personID], Rectangle: f.Rectangle}
+
+		facesRec = append(facesRec, aux)
+
+	}
+
+	return facesRec, nil
+}
+
+/*
 fileExists check se file exist
 */
 func fileExists(FileName string) bool {
