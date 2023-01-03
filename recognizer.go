@@ -283,18 +283,58 @@ func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) 
 }
 
 func (_this *Recognizer) RecognizeMultiplesFromImage(img image.Image) ([]goFace.Face, error) {
-	uuid := uuid.NewString()
-	tmpFile := os.TempDir() + "/" + uuid + ".jpg"
-	f, err := os.Create(tmpFile)
-	if err != nil {
-		return nil, err
+	if _this.UseGray {
+		img = _this.GrayScale(img)
 	}
-	defer f.Close()
-	if err = jpeg.Encode(f, img, nil); err != nil {
+
+	buf := new(bytes.Buffer)
+	if err := jpeg.Encode(buf, img, nil); err != nil {
 		return nil, err
 	}
 
-	return _this.RecognizeMultiples(tmpFile)
+	var (
+		idFaces []goFace.Face
+		err     error
+	)
+
+	if _this.UseCNN {
+		idFaces, err = _this.rec.RecognizeCNN(buf.Bytes())
+	} else {
+		idFaces, err = _this.rec.Recognize(buf.Bytes())
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can't recognize: %v", err)
+	}
+
+	return idFaces, nil
+}
+
+func (_this *Recognizer) RecognizeMultiplesFromBytes(imgBytes []byte) ([]goFace.Face, error) {
+	var err error
+
+	if _this.UseGray {
+		img, err := jpeg.Decode(bytes.NewReader(imgBytes))
+		if err != nil {
+			return nil, err
+		}
+
+		_this.RecognizeMultiplesFromImage(img)
+	}
+
+	var idFaces []goFace.Face
+
+	if _this.UseCNN {
+		idFaces, err = _this.rec.RecognizeCNN(imgBytes)
+	} else {
+		idFaces, err = _this.rec.Recognize(imgBytes)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can't recognize: %v", err)
+	}
+
+	return idFaces, nil
 }
 
 /*
