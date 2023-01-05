@@ -10,7 +10,6 @@ import (
 
 	goFace "github.com/Kagami/go-face"
 	"github.com/google/uuid"
-	"github.com/pixiv/go-libjpeg/jpeg"
 )
 
 // Data descriptor of the human face.
@@ -30,11 +29,12 @@ A Recognizer creates face descriptors for provided images and
 classifies them into categories.
 */
 type Recognizer struct {
-	Tolerance float32
-	rec       *goFace.Recognizer
-	UseCNN    bool
-	UseGray   bool
-	Dataset   []Data
+	Tolerance           float32
+	rec                 *goFace.Recognizer
+	UseCNN              bool
+	UseGray             bool
+	UseFastJPEGEncoding bool
+	Dataset             []Data
 }
 
 /*
@@ -45,6 +45,7 @@ func (_this *Recognizer) Init(path string) error {
 	_this.Tolerance = 0.4
 	_this.UseCNN = false
 	_this.UseGray = true
+	_this.UseFastJPEGEncoding = false
 
 	_this.Dataset = make([]Data, 0)
 
@@ -131,7 +132,8 @@ func (_this *Recognizer) AddRawImageToDataset(img image.Image, id string) (*Data
 		return nil, err
 	}
 	defer f.Close()
-	if err = jpeg.Encode(f, img, &jpeg.EncoderOptions{Quality: 100}); err != nil {
+
+	if err = _this.encodeJPEG(f, img); err != nil {
 		return nil, err
 	}
 
@@ -288,7 +290,8 @@ func (_this *Recognizer) RecognizeMultiplesFromImage(img image.Image) ([]goFace.
 	}
 
 	buf := new(bytes.Buffer)
-	if err := jpeg.Encode(buf, img, &jpeg.EncoderOptions{Quality: 100}); err != nil {
+
+	if err := _this.encodeJPEG(buf, img); err != nil {
 		return nil, err
 	}
 
@@ -314,7 +317,7 @@ func (_this *Recognizer) RecognizeMultiplesFromBytes(imgBytes []byte) ([]goFace.
 	var err error
 
 	if _this.UseGray {
-		img, err := jpeg.Decode(bytes.NewReader(imgBytes), &jpeg.DecoderOptions{})
+		img, err := _this.decodeJPEG(bytes.NewReader(imgBytes))
 		if err != nil {
 			return nil, err
 		}
@@ -368,7 +371,7 @@ func (_this *Recognizer) ClassifyWithImage(img image.Image) ([]Face, error) {
 		return nil, err
 	}
 	defer f.Close()
-	if err = jpeg.Encode(f, img, &jpeg.EncoderOptions{Quality: 100}); err != nil {
+	if err = _this.encodeJPEG(f, img); err != nil {
 		return nil, err
 	}
 
@@ -421,7 +424,7 @@ func (_this *Recognizer) ClassifyMultiplesWithImage(img image.Image) ([]Face, er
 		return nil, err
 	}
 	defer f.Close()
-	if err = jpeg.Encode(f, img, &jpeg.EncoderOptions{Quality: 100}); err != nil {
+	if err = _this.encodeJPEG(f, img); err != nil {
 		return nil, err
 	}
 
