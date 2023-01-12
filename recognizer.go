@@ -6,7 +6,6 @@ import (
 	"errors"
 	"fmt"
 	"image"
-	"image/jpeg"
 	"os"
 
 	goFace "github.com/Kagami/go-face"
@@ -30,11 +29,12 @@ A Recognizer creates face descriptors for provided images and
 classifies them into categories.
 */
 type Recognizer struct {
-	Tolerance float32
-	rec       *goFace.Recognizer
-	UseCNN    bool
-	UseGray   bool
-	Dataset   []Data
+	Tolerance           float32
+	rec                 *goFace.Recognizer
+	UseCNN              bool
+	UseGray             bool
+	UseFastJPEGEncoding bool
+	Dataset             []Data
 }
 
 /*
@@ -45,6 +45,7 @@ func (_this *Recognizer) Init(path string) error {
 	_this.Tolerance = 0.4
 	_this.UseCNN = false
 	_this.UseGray = true
+	_this.UseFastJPEGEncoding = false
 
 	_this.Dataset = make([]Data, 0)
 
@@ -131,7 +132,8 @@ func (_this *Recognizer) AddRawImageToDataset(img image.Image, id string) (*Data
 		return nil, err
 	}
 	defer f.Close()
-	if err = jpeg.Encode(f, img, nil); err != nil {
+
+	if err = _this.encodeJPEG(f, img); err != nil {
 		return nil, err
 	}
 
@@ -283,18 +285,59 @@ func (_this *Recognizer) RecognizeMultiples(path string) ([]goFace.Face, error) 
 }
 
 func (_this *Recognizer) RecognizeMultiplesFromImage(img image.Image) ([]goFace.Face, error) {
-	uuid := uuid.NewString()
-	tmpFile := os.TempDir() + "/" + uuid + ".jpg"
-	f, err := os.Create(tmpFile)
-	if err != nil {
-		return nil, err
+	if _this.UseGray {
+		img = _this.GrayScale(img)
 	}
-	defer f.Close()
-	if err = jpeg.Encode(f, img, nil); err != nil {
+
+	buf := new(bytes.Buffer)
+
+	if err := _this.encodeJPEG(buf, img); err != nil {
 		return nil, err
 	}
 
-	return _this.RecognizeMultiples(tmpFile)
+	var (
+		idFaces []goFace.Face
+		err     error
+	)
+
+	if _this.UseCNN {
+		idFaces, err = _this.rec.RecognizeCNN(buf.Bytes())
+	} else {
+		idFaces, err = _this.rec.Recognize(buf.Bytes())
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can't recognize: %v", err)
+	}
+
+	return idFaces, nil
+}
+
+func (_this *Recognizer) RecognizeMultiplesFromBytes(imgBytes []byte) ([]goFace.Face, error) {
+	var err error
+
+	if _this.UseGray {
+		img, err := _this.decodeJPEG(bytes.NewReader(imgBytes))
+		if err != nil {
+			return nil, err
+		}
+
+		_this.RecognizeMultiplesFromImage(img)
+	}
+
+	var idFaces []goFace.Face
+
+	if _this.UseCNN {
+		idFaces, err = _this.rec.RecognizeCNN(imgBytes)
+	} else {
+		idFaces, err = _this.rec.Recognize(imgBytes)
+	}
+
+	if err != nil {
+		return nil, fmt.Errorf("can't recognize: %v", err)
+	}
+
+	return idFaces, nil
 }
 
 /*
@@ -328,7 +371,7 @@ func (_this *Recognizer) ClassifyWithImage(img image.Image) ([]Face, error) {
 		return nil, err
 	}
 	defer f.Close()
-	if err = jpeg.Encode(f, img, nil); err != nil {
+	if err = _this.encodeJPEG(f, img); err != nil {
 		return nil, err
 	}
 
@@ -381,7 +424,7 @@ func (_this *Recognizer) ClassifyMultiplesWithImage(img image.Image) ([]Face, er
 		return nil, err
 	}
 	defer f.Close()
-	if err = jpeg.Encode(f, img, nil); err != nil {
+	if err = _this.encodeJPEG(f, img); err != nil {
 		return nil, err
 	}
 
@@ -395,6 +438,27 @@ func (_this *Recognizer) ClassifyMultiplesWithBytes(imgBytes []byte) ([]Face, er
 	}
 
 	return _this.ClassifyMultiplesWithImage(img)
+}
+
+/*
+Classify from a list of recognized faces.
+*/
+func (_this *Recognizer) ClassifyFaces(faces []goFace.Face) ([]Face, error) {
+	facesRec := make([]Face, 0)
+
+	for _, f := range faces {
+		personID := _this.rec.ClassifyThreshold(f.Descriptor, _this.Tolerance)
+		if personID < 0 {
+			continue
+		}
+
+		aux := Face{Data: _this.Dataset[personID], Rectangle: f.Rectangle}
+
+		facesRec = append(facesRec, aux)
+
+	}
+
+	return facesRec, nil
 }
 
 /*

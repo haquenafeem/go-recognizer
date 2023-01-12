@@ -3,16 +3,19 @@ package recognizer
 import (
 	"crypto/rand"
 	"encoding/hex"
+	"image"
+	"image/color"
+	"image/jpeg"
+	"io"
+	"os"
+	"path/filepath"
+
 	goFace "github.com/Kagami/go-face"
 	"github.com/disintegration/imaging"
 	"github.com/fogleman/gg"
 	"github.com/golang/freetype/truetype"
+	goLibJPEG "github.com/pixiv/go-libjpeg/jpeg"
 	"golang.org/x/image/font/gofont/goregular"
-	"image"
-	"image/color"
-	"image/jpeg"
-	"os"
-	"path/filepath"
 )
 
 /*
@@ -45,7 +48,7 @@ func (_this *Recognizer) SaveImage(Path string, Img image.Image) error {
 		return err
 	}
 
-	err = jpeg.Encode(outputFile, Img, nil)
+	err = _this.encodeJPEG(outputFile, Img)
 
 	if err != nil {
 		return err
@@ -158,5 +161,20 @@ func (_this *Recognizer) DrawFaces2(Path string, F []goFace.Face) (image.Image, 
 	}
 
 	return _this.DrawFaces(Path, aux)
+}
 
+func (_this *Recognizer) encodeJPEG(w io.Writer, m image.Image) error {
+	if _this.UseFastJPEGEncoding {
+		goLibJPEG.Encode(w, m, &goLibJPEG.EncoderOptions{Quality: 100})
+	}
+
+	return jpeg.Encode(w, m, nil)
+}
+
+func (_this *Recognizer) decodeJPEG(r io.Reader) (image.Image, error) {
+	if _this.UseFastJPEGEncoding {
+		return goLibJPEG.Decode(r, &goLibJPEG.DecoderOptions{})
+	}
+
+	return jpeg.Decode(r)
 }
